@@ -1,0 +1,6 @@
+include INSTALL.rst
+include README.rst
+include VERSION
+include LICENSE
+include requirements.txt
+include requirements-dev.txt
