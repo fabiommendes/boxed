@@ -1,70 +1,39 @@
-import io
-import sys
-import json
-import pwd
-import os
-import importlib
-import traceback
-from boxed.core import SerializationError
+#
+# JSON-based sandbox.
+#
+# The implementation is very similar to the more generic picklebox. We have it
+# separate for in the future we expect that the implementation could be hardened
+# in a C implementation that is not as vulnerable as the Python one.
+#
+# Python is a very fragile sandbox target since the user code can mess with
+# stack frames and globals and with some ingenuity can make this script return
+# anything it wants. This is not so problematic security-wise when using JSON
+# since the execution takes place at a lower privilege. In some scenarios
+# (e.g.: an online judge, this open some opportunities to forgery.
+#
+from boxed.core import set_protocol, END_POINT, SerializationError
+from boxed.core import load_data, validate_target, lower_privileges, execute_target
+
 
 # Read data and check handshake
-data = json.loads(input())
-if data['header'] != 'jsonbox::0.1':
-    print(json.dumps({
-        'status': 'invalid-handshake',
-        'handshake': 'jsonbox::0.1',
-    }))
-    raise SystemExit(0)
+set_protocol('json')
+data = load_data()
+target = validate_target(data, handshake='jsonbox::0.1')
 
 
 # Sets the UID to the low privilege user in order to prevent harm...
-try:
-    username = data.get('user', 'nobody')
-    if username == 'root':
-        raise PermissionError
-    userinfo = pwd.getpwnam(username)
-except (KeyError, PermissionError):
-    print(json.dumps({
-        'status': 'invalid-user',
-    }))
-    raise SystemExit(0)
-os.setuid(userinfo.pw_uid)
-
-
-# Caches the real stderr and stdout
-real_stderr = sys.stderr
-real_stdout = sys.stdout
-sys.stdout = sys.stderr = io.StringIO()
+lower_privileges(data.get('user', 'nobody'))
 
 
 # Execute target function
-mod, _, func = data['target'].partition('.')
-mod = importlib.import_module(mod)
-target = getattr(mod, func)
-try:
-    output = target(*data['args'], **data['kwargs'])
-except Exception as ex:
-    tb_data = io.StringIO()
-    traceback.print_tb(ex.__traceback__, limit=-2, file=tb_data)
-    print(json.dumps({
-        'status': 'exception',
-        'type': ex.__class__.__name__,
-        'message': str(ex),
-        'traceback': tb_data.getvalue(),
-    }), file=real_stdout)
-    raise SystemExit(0)
+out_data = execute_target(target, data['args'], data['kwargs'])
+
 
 # Convert result to JSON and return
-data = {
-    'status': 'success',
-    'stdout': sys.stdout.getvalue(),
-    'output': output,
-}
-
 try:
-    print(json.dumps(data), file=real_stdout)
-except ValueError:
-    print(json.dumps({
+    END_POINT(out_data)
+except SerializationError:
+    END_POINT({
         'status': 'serialization-error',
-        'output': str(output),
-    }), file=real_stdout)
+        'output': repr(out_data['output']),
+    })
