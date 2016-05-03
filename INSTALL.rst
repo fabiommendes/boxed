@@ -1,24 +1,21 @@
 The easiest way to install boxed is using pip::
 
-    $ python -m pip install boxed
+    $ sudo python -m pip install boxed
 
 This will fetch the archive and its dependencies from the internet and install
-it for you. You may need to pick either ``python2``` or ``python3`` in
-order to adjust for the correct python version.
+it for you. You may need to run ``python3`` in order to select the correct
+python version.
 
 If you download the tarball, unpack it, and execute::
 
-    $ python setup.py install
+    $ sudo python setup.py install
 
-In either case, it is possible to perform local user installs by appending the
-``--user`` option.
+This package must be installed as the superuser since it requires priviledges
+to set the correct capabilities to the ``python_boxed`` interpreter.
 
 
 Troubleshoot
 ------------
-
-Windows users may find that these command will only works if typed from Python's
-installation directory.
 
 Some Linux distributions (e.g. Ubuntu) install Python without installing pip.
 Please install it before. If you don't have root privileges, download the

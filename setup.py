@@ -8,20 +8,14 @@
 
 import os
 import sys
+import warnings
 from setuptools import setup, find_packages
+
 
 # It only works on linux
 if sys.platform != 'linux':
     raise SystemExit('you are using %s. Boxed only works on linux!' %
                      sys.platform)
-
-# And it only installs as the super user
-cmd_idx = sys.argv.index('setup.py') + 1
-if sys.argv[cmd_idx] == 'install':
-    if '--user' in sys.argv:
-        raise SystemExit('user installs are not allowed')
-    if os.getuid() != 0:
-        raise SystemExit('must be run as the super user')
 
 # Meta information
 name = 'boxed'
@@ -64,22 +58,23 @@ setup(
         'dill': ['dill'],
     },
 
-    # Scripts
-    #entry_points={
-    #    'console_scripts': ['boxed = boxed.__main__:main'],
-    #},
-
     # Other configurations
     zip_safe=False,
     platforms='any',
     test_suite='%s.test.test_%s' % (name, name),
 )
 
-if  sys.argv[cmd_idx] == 'install':
-    py_path = os.path.realpath(sys.executable)
-    boxed_path = '/usr/bin/python_boxed'
-    with open(py_path, 'rb') as src:
-        with open(boxed_path, 'wb') as dest:
-            dest.write(src.read())
-    os.system('setcap cap_setuid+ep %s' % boxed_path)
-    os.system('chmod +x %s' % boxed_path)
+if 'install' in sys.argv:
+    if os.getuid() == 0:
+        py_path = os.path.realpath(sys.executable)
+        boxed_path = '/usr/bin/python_boxed'
+        with open(py_path, 'rb') as src:
+            with open(boxed_path, 'wb') as dest:
+                dest.write(src.read())
+        os.system('setcap cap_setuid+ep %s' % boxed_path)
+        os.system('chmod +x %s' % boxed_path)
+    else:
+        warnings.warn('not superuser: you must configure the python_boxed '
+                      'executable manually. Please make a copy of the python'
+                      'interpreter and run the command `setcap cap_setuid+ep '
+                      '<file>` on it.')

@@ -5,6 +5,11 @@ import sys
 import importlib
 from boxed.core import CommunicationPipe, SerializationError
 
+# Caches the real stderr and stdout
+real_stderr = sys.stderr
+real_stdout = sys.stdout
+sys.stdout = sys.stderr = io.StringIO()
+
 
 # Utility
 def serialization_error(error):
@@ -17,28 +22,33 @@ def serialization_error(error):
 
 # Load the list of modules before setuid (the running user may not have access
 # to all modules that the calling user has).
-conn = CommunicationPipe(sys.stdout)
-sys.stdout = sys.stderr
+handshake = 'python-boxed::0.1'
+conn = CommunicationPipe(real_stdout)
+conn.sendraw(handshake)
+msg = conn.recvraw()
+if msg != handshake:
+    raise SystemExit(1)
 
 for mod in conn.recvraw().split():
     importlib.import_module(mod)
 conn.serializer = conn.recvraw()
 is_json = conn.serializer == 'json'
 
-# Sets the UID to the low priviledge user in order to prevent harm...
+
+# Sets the UID to the low privilege user in order to prevent harm...
 username = conn.recvraw()
 if username == 'root':
-    conn.send(PermissionError('cannot change user to root'))
+    conn.senderror(PermissionError('cannot change user to root'))
     raise SystemExit(1)
 else:
     try:
         userinfo = pwd.getpwnam(username)
         os.setuid(userinfo.pw_uid)
     except KeyError:
-        conn.send(PermissionError('invalid username: %s' % username))
+        conn.senderror(PermissionError('invalid username: %s' % username))
         raise SystemExit(1)
     except Exception as exc:
-        conn.send(exc)
+        conn.senderror(exc)
         raise SystemExit(1)
 conn.send(None)
 
@@ -83,11 +93,13 @@ while True:
 
     # Send results
     try:
-        data = conn.prepare([result, exc, out, err])
+        data = conn.prepare([result, out, err])
     except Exception as exc:
-        conn.send(serialization_error(
-            'could not serialize object: %s\n%s(%r)' %
-            (result, type(exc).__name__, str(exc))))
+        conn.senderror(exc)
     else:
         conn.send(None)
+        if exc is None:
+            conn.send(None)
+        else:
+            conn.senderror(exc)
         conn.sendraw(data)

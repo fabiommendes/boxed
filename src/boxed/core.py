@@ -1,11 +1,13 @@
 import sys
+import builtins
 import importlib
 
 
 def _sendpickle_factory(pickler):
     def sendpickle(self, data):
         lib = importlib.import_module(pickler)
-        self.sendsafe(lib.dumps(data))
+        data = lib.dumps(data)
+        self.sendsafe(data)
     sendpickle.__name__ = 'send' + pickler
 
     return sendpickle
@@ -13,8 +15,12 @@ def _sendpickle_factory(pickler):
 
 def _recvpickle_factory(pickler):
     def recvpickle(self):
-        lib = importlib.import_module(pickler)
-        return lib.loads(self.recvsafe())
+        try:
+            lib = self.picklers[pickler]
+        except KeyError:
+            lib = self.picklers[pickler] = importlib.import_module(pickler)
+        data = self.recvsafe()
+        return lib.loads(data)
     recvpickle.__name__ = 'recv' + pickler
 
     return recvpickle
@@ -35,6 +41,7 @@ class CommunicationPipe:
         self.stdout = stdout
         self.stdin = stdin
         self.encoding = encoding
+        self.picklers = {}
 
     @property
     def serializer(self):
@@ -48,6 +55,32 @@ class CommunicationPipe:
             self._default = value
         except AttributeError:
             raise ValueError('invalid method')
+
+    def senderror(self, ex):
+        """Sends an exception"""
+
+        if self.serializer == 'json':
+            self.send({
+                '@error': type(ex).__name__,
+                '@message': str(ex),
+            })
+        else:
+            self.send(ex)
+
+    def recvcheck(self):
+        """Receive and check if some error were raised."""
+
+        data = self.recv()
+        if self.serializer == 'json' and data and isinstance(data, dict):
+            if '@error' in data:
+                exception = getattr(builtins, data['@error'])
+                if (isinstance(exception, type) and
+                        issubclass(exception, Exception)):
+                    raise exception(data['@message'])
+        else:
+            if isinstance(data, Exception):
+                raise data
+        return data
 
     def sendraw(self, st):
         """Send a raw string of text. The other end must read it using

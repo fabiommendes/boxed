@@ -30,8 +30,8 @@ class Pinteract:
         duration = max(duration, 0)
         for _ in range(int(duration * 100)):
             status = self.status()
-            if status == 'running':
-                time.sleep(0.01)
+            if status in ['running', 'disk-sleep']:
+                time.sleep(0.005)
             elif status in ['sleeping', 'zombie', 'dead']:
                 break
             else:
@@ -93,8 +93,8 @@ class Pinteract:
                         raise TimeoutError
                     break
                 else:
-                    print('status:', self.status())
-                    raise
+                    raise TimeoutError('timeout with unhandled status: %s' %
+                                       self.status())
             data.append(last)
 
         self._remaining_time -= time.time() - t0        
@@ -123,19 +123,3 @@ class Pinteract:
         out = self.receive()
         self._process.kill(9)
         return out
-    
-if __name__ == '__main__':
-    sub = Pinteract(['ls', '-lha'])
-    print(sub.receive())
-    print(sub.finish())
-    print('OK', flush=True)
-    
-    
-    sub = Pinteract(['python', 'tests/examples/simple.py'])
-    print(sub.receive())
-    print(sub.send('1'))
-    print(sub.receive())
-    print(sub.send('2'))
-    print(sub.receive())
-    print(sub.finish())
-    print('OK', flush=True)
