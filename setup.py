@@ -1,11 +1,3 @@
-# -*- coding: utf8 -*-
-#
-# This file were created by Python Boilerplate. Use boilerplate to start simple
-# usable and best-practices compliant Python projects.
-#
-# Learn more about it at: http://github.com/fabiommendes/boilerplate/
-#
-
 import os
 import sys
 import warnings
@@ -13,9 +5,11 @@ from setuptools import setup, find_packages
 
 
 # It only works on linux
-if sys.platform != 'linux':
-    raise SystemExit('you are using %s. Boxed only works on linux!' %
-                     sys.platform)
+if not sys.platform.startswith('linux'):
+    warnings.warn(
+        'you are using %s. Boxed only works on linux!' % sys.platform,
+        RuntimeWarning,
+    )
 
 # Meta information
 name = 'boxed'
@@ -48,7 +42,7 @@ setup(
         'Topic :: Software Development :: Libraries',
     ],
 
-    # Packages and depencies
+    # Packages and dependencies
     package_dir={'': 'src'},
     packages=find_packages('src'),
     install_requires=[],

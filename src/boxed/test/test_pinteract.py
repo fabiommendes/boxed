@@ -52,11 +52,6 @@ def test_intercalate_inputs_and_outputs():
     assert p.receive() == 'foobar\n'
 
 
-def test_read_system_program():
-    p = Pinteract(['ls', '-lha'])
-    assert 'test_pinteract.py' in p.receive()
-
-
 def test_read_c_program():
     with c_main('puts("hello world");') as p:
         assert p.receive() == 'hello world\n'

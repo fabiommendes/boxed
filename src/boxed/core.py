@@ -40,10 +40,13 @@ _python_print_function = print
 
 
 class CommunicationPipe:
-    """A simple communication link between two programs based on sending and
-    receiveing messages in the stdin and stdout streams."""
+    """
+    A simple communication link between two programs based on sending and
+    receiving messages in the stdin and stdout streams.
+    """
 
-    def __init__(self, stdout=None, stdin=None, serializer='pickle', encoding='utf8'):
+    def __init__(self, stdout=None, stdin=None, serializer='pickle',
+                 encoding='utf8'):
         self.serializer = serializer
         self.stdout = stdout
         self.stdin = stdin
@@ -327,11 +330,13 @@ def comment(*args, symbol='# ', **kwargs):
     real_print(symbol, *args, **kwargs)
 
 
+# noinspection PyMissingConstructor
 class FileString(collections.UserString):
     """
     A string-like object that is initialized with the contents of a file object
     inside a context manager.
     """
+
     def __init__(self, file):
         self.file = file
         self._data = None
@@ -398,13 +403,15 @@ def validate_target(data, handshake):
     except ImportError as ex:
         END_POINT({
             'status': 'invalid-target',
-            'message': 'could not import module %r. Maybe it must be passed it to '
-                       'the "imports" argument.' % mod,
+            'message':
+                'could not import module %r. Maybe it must be passed it to '
+                'the "imports" argument.' % mod,
         })
     except AttributeError:
         END_POINT({
             'status': 'invalid-target',
-            'message': 'could not find function "%s" in module %s' % (func, mod),
+            'message':
+                'could not find function "%s" in module %s' % (func, mod),
         })
     comment('target function loaded as %s' % target)
     return target
@@ -424,8 +431,9 @@ def lower_privileges(username):
             'status': 'invalid-user',
             'user': username,
         })
-    os.setuid(userinfo.pw_uid)
-    comment('changed to user %s, (uid=%s)' % (username, userinfo.pw_uid))
+    else:
+        os.setuid(userinfo.pw_uid)
+        comment('changed to user %s, (uid=%s)' % (username, userinfo.pw_uid))
 
 
 def execute_target(target, args, kwargs, send_exception=False):
@@ -437,10 +445,12 @@ def execute_target(target, args, kwargs, send_exception=False):
     actual exception in the 'exception' key of this dictionary.
     """
 
+    output = None
+
     with capture_print() as stdout:
         try:
             output = target(*args, **kwargs)
-            comment('target function %s sucessfully executed' % target)
+            comment('target function %s successfully executed' % target)
         except Exception as ex:
             tb_data = io.StringIO()
             traceback.print_tb(ex.__traceback__, limit=-3, file=tb_data)
@@ -505,6 +515,11 @@ def return_from_status_data(data):
     elif status == 'serialization-error':
         raise SerializationError(
             'output could not be converted to JSON: %s' % data['output']
+        )
+
+    elif status == 'invalid-import':
+        raise ImportError(
+            'could not import module %r' % data['module']
         )
 
     else:
