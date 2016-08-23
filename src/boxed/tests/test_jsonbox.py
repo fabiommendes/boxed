@@ -56,6 +56,3 @@ def test_output_pass_through_sandbox(run):
         sys.stdout = stdout
 
     assert out.getvalue() == 'hello world\n'
-
-if __name__ == '__main__':
-    pytest.main('test_jsonbox.py')

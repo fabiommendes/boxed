@@ -1,5 +1,5 @@
-Boxed is a simple sandboxing solution to Python. It works by running arbitrary
-Python functions in another python interpreter as an unprivileged user.
+Boxed is a simple sandboxing solution for Python. It works by running arbitrary
+Python functions in a separate python interpreter as an unprivileged user.
 
 The API is very simple::
 
@@ -38,21 +38,21 @@ How does it work?
 =================
 
 The sandbox is spawned as a different Python interpreter using the python_boxed
-executable which is created during installation. This is just a copy of the regular interpreter
-with the Linux SETUID capability enabled. This simple technique allows a process
-to change its UID during execution, which enable it to drop its privileges early
-during execution.
+executable which is created during installation. This is just a copy of the regular
+interpreter with Linux's SETUID capability enabled. This simple technique allows a
+process to change its UID during execution, which enable it to drop its privileges
+early during execution.
 
 This might remember the infamous SUID bit. SUID executables allows an user to spawn
 program that starts its life with super user permissions and (hopefully) drop
 them as soon as possible while keeping only the permissions necessary for it
 to run. The classical example is a webserver. Only the super user can
 listen to port 80 (or any other lower ports), thus the webserver must start its
-life as root and quickly drop all privileges but that of communicating in the
-desired ports.
+life as root and quickly drop all privileges but those necessary to communicate in
+the desired ports.
 
 Linux capabilities is a fine-grained version of the SUID bit. We can grant
-very specific privileges to any program. The boxed library uses a Python
+very specific super user privileges to a program. The boxed library uses a Python
 interpreter with the SETUID capability which grant us only the
 permission of changing the UID of a process. Even if the process escalates its
 privileges to run with UID=0 (the super user), none of the other permissions are
@@ -60,9 +60,9 @@ granted so it will not gain any super powers. In particular, it will not be
 able to read, write or execute any file that user who executed the sandbox did
 not have access to.
 
-By default, ``boxed`` runs the sandbox as the `nobody` user. Upon installation,
-we create a copy of the interpreter called /usr/bin/python_boxed and then
-apply the command::
+By default, ``boxed`` runs the sandbox as the `nobody` user. We create a copy of
+the interpreter called /usr/bin/python_boxed during installatin and then apply
+the command::
 
     $ setcap cap_setuid+ep /usr/bin/python_boxed
 
@@ -71,5 +71,5 @@ Does it work on Windows, OSX, BSD, etc?
 =======================================
 
 No. This technique is linux-specific. Also, it is very difficult to provide a good,
-lightweight, and cross-platform sandboxing solution. Currently we have no plans
-to implement sandboxing in other platforms.
+lightweight, and cross-platform sandboxing solution. We have no plans to implement
+sandboxing in other platforms.

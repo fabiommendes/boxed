@@ -8,7 +8,3 @@ def test_capture_print():
 
     assert data == 'foo\n'
 
-
-
-if __name__ == '__main__':
-    pytest.main('test_core.py')

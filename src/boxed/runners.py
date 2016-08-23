@@ -23,28 +23,28 @@ def run(target, args=(), kwargs=None, *, timeout=None,
     protocol and any modification that the target function makes to the input
     arguments is not transmitted back from the function call.
 
-    Parameters
-    ----------
+    Args:
+        target
+            Callable that shall be executed in the sandbox.
+        args, kwargs
+            Position and named arguments passed to the callable.
+        timeout
+            The maximum allowed time in seconds. If no timeout is given, there will
+            be no time limits for execution.
+        method
+            The sandboxing strategy. For now, only the 'simple' strategy is
+            implemented.
+        imports
+            A list of modules that should be imported before lowering privileges.
+            Remember that a low privilege user may not be able to import modules
+            installed in the local user folders.
+        serializer
+            'json', 'pickle', 'dill' or 'cloudpickle'.
 
-    target : callable
-        Callable that shall be executed in the sandbox.
-    args, kwargs :
-        Position and named arguments passed to the callable.
-    timeout : float
-        The maximum allowed time in seconds. If no timeout is given, there will
-        be no time limits for execution.
-    method : str
-        The sandboxing strategy. For now, only the 'simple' strategy is
-        implemented.
-    imports:
-        A list of modules that should be imported before lowering privileges.
-        Remember that a low privilege user may not be able to import modules
-        installed in the local user folders.
-    serializer : 'json', 'pickle', 'dill' or 'cloudpickle'
-        The protocol used to transmit data from/to the sandbox. Going from
-        JSON to cloudpickle we trade security with the ability to handle more
-        argument types. Remember that malicious code can make pickle execute
-        arbitrary data during unpickling (which is done outside the sandbox).
+            The protocol used to transmit data from/to the sandbox. Going from
+            JSON to cloudpickle we trade security with the ability to handle more
+            argument types. Remember that malicious code can make pickle execute
+            arbitrary data during unpickling (which is done outside the sandbox).
     """
 
     if method in ['best', 'simple']:

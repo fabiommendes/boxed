@@ -80,6 +80,3 @@ def test_interacalate_inputs_and_outputs_in_c_program():
         assert p.receive() == 'b: '
         p.send('bar')
         assert p.receive() == 'foobar\n'
-
-if __name__ == '__main__':
-    pytest.main('test_pinteract.py')
