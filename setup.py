@@ -54,8 +54,6 @@ setup(
     url='',
     description='Simple and lightweight sandbox solution for Python an Linux.',
     long_description=open('README.rst').read(),
-
-    # Classifiers (see http://...)
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
@@ -77,6 +75,5 @@ setup(
 
     # Other configurations
     zip_safe=False,
-    platforms='any',
-    test_suite='%s.test.test_%s' % (name, name),
+    cmdclass={'install': install},
 )
