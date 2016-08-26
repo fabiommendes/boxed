@@ -1,8 +1,31 @@
-#-*- coding: utf8 -*-
+# -*- coding: utf8 -*-
 import os
 import sys
 import warnings
+
 from setuptools import setup, find_packages
+from setuptools.command.install import install as _install
+
+
+class install(_install):
+    def run(self):
+        super(install, self).run()
+
+        if os.getuid() == 0:
+            py_path = os.path.realpath(sys.executable)
+            boxed_path = '/usr/bin/python_boxed'
+            with open(py_path, 'rb') as src:
+                with open(boxed_path, 'wb') as dest:
+                    dest.write(src.read())
+            os.system('setcap cap_setuid+ep %s' % boxed_path)
+            os.system('chmod +x %s' % boxed_path)
+        else:
+            warnings.warn(
+                'not superuser: you must configure the python_boxed '
+                'executable manually. Please make a copy of the python'
+                'interpreter and run the command `setcap cap_setuid+ep '
+                '<file>` on it.'
+            )
 
 
 # It only works on linux
@@ -21,7 +44,6 @@ dirname = os.path.dirname(__file__)
 # Save version and author to __meta__.py
 with open(os.path.join(dirname, 'src', name, '__meta__.py'), 'w') as F:
     F.write('__version__ = %r\n__author__ = %r\n' % (version, author))
-
 
 setup(
     # Basic info
@@ -58,18 +80,3 @@ setup(
     platforms='any',
     test_suite='%s.test.test_%s' % (name, name),
 )
-
-if 'install' in sys.argv:
-    if os.getuid() == 0:
-        py_path = os.path.realpath(sys.executable)
-        boxed_path = '/usr/bin/python_boxed'
-        with open(py_path, 'rb') as src:
-            with open(boxed_path, 'wb') as dest:
-                dest.write(src.read())
-        os.system('setcap cap_setuid+ep %s' % boxed_path)
-        os.system('chmod +x %s' % boxed_path)
-    else:
-        warnings.warn('not superuser: you must configure the python_boxed '
-                      'executable manually. Please make a copy of the python'
-                      'interpreter and run the command `setcap cap_setuid+ep '
-                      '<file>` on it.')
