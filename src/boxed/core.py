@@ -67,7 +67,9 @@ class CommunicationPipe:
             raise ValueError('invalid method')
 
     def senderror(self, ex):
-        """Sends an exception"""
+        """
+        Sends an exception.
+        """
 
         if self.serializer == 'json':
             self.send({
@@ -78,7 +80,9 @@ class CommunicationPipe:
             self.send(ex)
 
     def recvcheck(self):
-        """Receive and check if some error were raised."""
+        """
+        Receive and check if some error were raised.
+        """
 
         data = self.recv()
         if self.serializer == 'json' and data and isinstance(data, dict):
@@ -93,8 +97,10 @@ class CommunicationPipe:
         return data
 
     def sendraw(self, st):
-        """Send a raw string of text. The other end must read it using
-        the recvraw() function."""
+        """
+        Send a raw string of text. The other end must read it using
+        the recvraw() function.
+        """
 
         st = self.as_str(st)
 
@@ -103,7 +109,9 @@ class CommunicationPipe:
         _python_print_function(st, file=self.stdout or sys.stdout)
 
     def recvraw(self):
-        """Receives a raw stream sent by sendraw()."""
+        """
+        Receives a raw stream sent by sendraw().
+        """
 
         if self.stdin is None:
             return _python_input_function()
@@ -111,7 +119,9 @@ class CommunicationPipe:
             return self.stdin.readline().rstrip('\n')
 
     def sendnumber(self, number):
-        """Sends numeric data. The other end must read it with recvnumber()"""
+        """
+        Sends numeric data. The other end must read it with recvnumber()
+        """
 
         import numbers
 
@@ -121,7 +131,9 @@ class CommunicationPipe:
         self.sendraw(str(number))
 
     def recvnumber(self):
-        """Receives a number sent by sendnumber()"""
+        """
+        Receives a number sent by sendnumber()
+        """
 
         data = self.recvraw()
         try:
@@ -133,14 +145,18 @@ class CommunicationPipe:
                 return complex(data)
 
     def sendjson(self, data):
-        """Sends data by converting it to JSON stream."""
+        """
+        Sends data by converting it to JSON stream.
+        """
 
         import json
 
         self.sendraw(json.dumps(data))
 
     def recvjson(self):
-        """Receive data sent by sendjson."""
+        """
+        Receive data sent by sendjson.
+        """
 
         import json
 
@@ -148,7 +164,8 @@ class CommunicationPipe:
         return json.loads(data)
 
     def sendsafe(self, data):
-        """Encode an arbitrary string into a safe form to pass to print()"""
+        """
+        Encode an arbitrary string into a safe form to pass to print()."""
 
         import base64
 
@@ -156,7 +173,9 @@ class CommunicationPipe:
         return self.sendraw(data)
 
     def recvsafe(self):
-        """Receive stream from sendsafe()"""
+        """
+        Receive stream from sendsafe().
+        """
 
         import base64
 
@@ -184,19 +203,25 @@ class CommunicationPipe:
             return x.decode(self.encoding)
 
     def send(self, data):
-        """Sends an arbitrary python data over the default stream."""
+        """
+        Sends an arbitrary python data over the default stream.
+        """
 
         self._default_sender(data)
 
     def recv(self):
-        """Receives data sent by ty send(data) function."""
+        """
+        Receives data sent by ty send(data) function.
+        """
 
         return self._default_receiver()
 
     def prepare(self, data):
-        """Prepare some data with the default send method that can later be
+        """
+        Prepare some data with the default send method that can later be
         sent using sendraw(). The other side of the connection should receive
-        data using the recv() method normally"""
+        data using the recv() method normally.
+        """
 
         buffer = []
         try:
@@ -211,7 +236,9 @@ class CommunicationPipe:
 # Specialized error classes
 #
 class SerializationError(ValueError):
-    """Triggered when pickle or other serializer fails."""
+    """
+    Triggered when pickle or other serializer fails.
+    """
 
 
 #
@@ -232,7 +259,9 @@ exceptions['SerializationError'] = SerializationError
 
 
 def indent(msg, indent):
-    """Indent message"""
+    """
+    Indent message.
+    """
 
     prefix = ' ' * indent
     return '\n'.join(prefix + line for line in msg.splitlines())
@@ -315,15 +344,19 @@ def send_data(data):
 
 
 def END_POINT(data):
-    """Sends data using the global serializer and finish execution with a
-    success exit code."""
+    """
+    Sends data using the global serializer and finish execution with a
+    success exit code.
+    """
 
     send_data(data)
     raise SystemExit(0)
 
 
 def comment(*args, symbol='# ', **kwargs):
-    """Sends a paragraph prepended by the comment symbol."""
+    """
+    Sends a paragraph prepended by the comment symbol.
+    """
 
     with capture_print() as st:
         data = '\n'.join(symbol + x for x in st.splitlines())
@@ -350,8 +383,10 @@ class FileString(collections.UserString):
 
 @contextlib.contextmanager
 def capture_print():
-    """Context manager that captures data printed to stdout into a
-    string-like object."""
+    """
+    Context manager that captures data printed to stdout into a
+    string-like object.
+    """
 
     old_stdout = sys.stdout
     try:
@@ -473,8 +508,10 @@ def execute_target(target, args, kwargs, send_exception=False):
 
 
 def return_from_status_data(data):
-    """Interpret status data sent from the __main__.py script and return the
-    correct value or raise the corresponding exception."""
+    """
+    Interpret status data sent from the __main__.py script and return the
+    correct value or raise the corresponding exception.
+    """
 
     if 'status' not in data:
         raise RuntimeError('subprocess returned an invalid message')
@@ -527,7 +564,9 @@ def return_from_status_data(data):
 
 
 def execute_subprocess(command, inputs, *, timeout, target, args, kwargs):
-    """Assure that subprocess did not raised any errors."""
+    """
+    Assure that subprocess did not raised any errors.
+    """
 
     from subprocess import Popen, PIPE
 
@@ -566,7 +605,9 @@ def execute_subprocess(command, inputs, *, timeout, target, args, kwargs):
 
 
 def get_serializer(name):
-    """Return the serialization function from name."""
+    """
+    Return the serialization function from name.
+    """
 
     dumps = importlib.import_module(name).dumps
 
@@ -590,7 +631,9 @@ def get_serializer(name):
 
 
 def get_deserializer(name):
-    """Return the de-serialization function from name."""
+    """
+    Return the de-serialization function from name.
+    """
 
     loads = importlib.import_module(name).loads
 

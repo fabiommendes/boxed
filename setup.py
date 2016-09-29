@@ -9,6 +9,8 @@
 import os
 import sys
 import codecs
+import warnings
+
 from setuptools import setup, find_packages
 from setuptools.command.install import install as _install
 
@@ -23,6 +25,7 @@ __author__ = u'F\\xe1bio Mac\\xeado Mendes'
 ''' % version
 with open(path, 'w') as F:
     F.write(meta)
+
     
 # Adapt the install command to execute setcap in the end of installation
 class install(_install):
@@ -87,11 +90,15 @@ setup(
             'python-boilerplate',
             'invoke>=0.13',
             'pytest',
+            'pytest-cov',
+            'psutil',
+            'pexpect',
+            'manuel',
         ],
         'cloudpickle': ['cloudpickle'],
         'dill': ['dill'],
     },
-    
+
     # Other configurations
     zip_safe=False,
     platforms='any',
