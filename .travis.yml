@@ -3,9 +3,6 @@ cache: pip
 deps:
   setuptools
 
-env:
-  - PYTHONPATH=src/
-
 # Test environments
 matrix:
   include:
@@ -21,6 +18,9 @@ before_install:
   - sudo apt-get install libcap2-bin
   - sudo cp `python3 -c "import sys; print(sys.executable)"` /usr/bin/python_boxed
   - sudo setcap cap_setuid+ep /usr/bin/python_boxed
+  - sudo python3 get-pip.py install setuptools
+  - sudo python3 get-pip.py -r requirements.txt
+  - sudo python3 setup.py install
 
 install:
   - pip install tox coveralls
