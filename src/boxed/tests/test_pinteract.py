@@ -68,7 +68,7 @@ def test_send_two_inputs_to_c_program():
         assert p.receive() == 'foobar\n'
 
 
-def test_interacalate_inputs_and_outputs_in_c_program():
+def test_intercalate_inputs_and_outputs_in_c_program():
     src = 'char a[100], b[100]; ' \
           'printf("a: "); scanf("%s", a); ' \
           'printf("b: "); scanf("%s", b);' \

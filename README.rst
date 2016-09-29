@@ -22,7 +22,7 @@ The possibility of damage is greatly reduced by using the JSON serializer.
 The downside is that both inputs and outputs must be JSON-compatible (i.e., they
 must be composed of basic types such as numbers, strings, lists and dicts.
 Besides that, the target function itself must be a Python callable living in a
-public namespace: the JSON serializer just sends the function full qualified
+public namespace. The JSON serializer just sends the function full qualified
 name to the sandbox and import this function there.
 
 ::
@@ -46,22 +46,22 @@ early during execution.
 This might remember the infamous SUID bit. SUID executables allows an user to spawn
 program that starts its life with super user permissions and (hopefully) drop
 them as soon as possible while keeping only the permissions necessary for it
-to run. The classical example is a webserver. Only the super user can
-listen to port 80 (or any other lower ports), thus the webserver must start its
+to run. The classical example is a web server. Only the super user can
+listen to port 80 (or any other lower ports), thus the web server must start its
 life as root and quickly drop all privileges but those necessary to communicate in
 the desired ports.
 
-Linux capabilities is a fine-grained version of the SUID bit. We can grant
-very specific super user privileges to a program. The boxed library uses a Python
+Linux capabilities is a fine-grained version of the SUID bit. It grants
+very specific privileges to a program. The ``boxed`` library uses a Python
 interpreter with the SETUID capability which grant us only the
 permission of changing the UID of a process. Even if the process escalates its
 privileges to run with UID=0 (the super user), none of the other permissions are
-granted so it will not gain any super powers. In particular, it will not be
+granted so it will not gain super powers. In particular, it will not be
 able to read, write or execute any file that user who executed the sandbox did
 not have access to.
 
 By default, ``boxed`` runs the sandbox as the `nobody` user. We create a copy of
-the interpreter called /usr/bin/python_boxed during installatin and then apply
+the interpreter called /usr/bin/python_boxed during installation and then apply
 the command::
 
     $ setcap cap_setuid+ep /usr/bin/python_boxed

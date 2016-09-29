@@ -62,7 +62,3 @@ def test_serialization_error():
 
 def test_json_serializer():
     assert run(math.sqrt, (4,), serializer='json') == 2
-
-
-if __name__ == '__main__':
-    pytest.main('test_boxed.py')

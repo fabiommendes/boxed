@@ -68,7 +68,7 @@ setup(
 
     # Classifiers (see https://pypi.python.org/pypi?%3Aaction=list_classifiers)
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: GNU General Public License (GPL)',
         'Operating System :: OS Independent',

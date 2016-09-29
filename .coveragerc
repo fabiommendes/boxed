@@ -1,6 +1,8 @@
 [run]
 include = src/*
 branch = True
+#data_file = /tmp/boxed/.coverage
+#timid = True
 
 
 [report]

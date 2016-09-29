@@ -22,8 +22,10 @@ class Pinteract:
         self.pid = self._process.pid
         
     def burn(self, duration):
-        """Burn at most the given time (in seconds) waiting for the process to
-        leave the "running" status."""
+        """
+        Burn at most the given time (in seconds) waiting for the process to
+        leave the "running" status.
+        """
         
         t0 = time.time()
         duration = min(duration, self._remaining_time)
@@ -39,7 +41,9 @@ class Pinteract:
         self._remaining_time -= time.time() - t0
         
     def __burn_once(self):
-        """Burn at most timeout at the first call to receive()"""
+        """
+        Burn at most timeout at the first call to receive().
+        """
         
         if not self.__burnt:
             if self.timeout is None:
@@ -48,7 +52,9 @@ class Pinteract:
                 self.burn(self.timeout)
         
     def status(self):
-        """Return a string with the status code for the process"""
+        """
+        Return a string with the status code for the process.
+        """
 
         try:
             return self._psdata.status()
@@ -56,22 +62,30 @@ class Pinteract:
             return 'dead'
     
     def is_running(self):
-        """Return True if child process is still running."""
+        """
+        Return True if child process is still running.
+        """
         
         return self.status() == 'running'
                     
     def is_dead(self):
-        """Return True if child process is dead."""
+        """
+        Return True if child process is dead.
+        """
         
         return self.status() in ['zombie', 'dead']
 
     def is_sleeping(self):
-        """Return True if child process is sleeping."""
+        """
+        Return True if child process is sleeping.
+        """
         
         return self.status() == 'sleeping'
 
     def receive(self):
-        """Read the output of the child process."""
+        """
+        Read the output of the child process.
+        """
 
         self.__burn_once()
         t0 = time.time()
@@ -104,7 +118,9 @@ class Pinteract:
         return data.replace('\r\n', '\n')
     
     def send(self, data, end=None):
-        """Write some input string of data to the child process"""
+        """
+        Write some input string of data to the child process.
+        """
         
         t0 = time.time()
         if self.is_dead():
@@ -117,8 +133,10 @@ class Pinteract:
         self._remaining_time -= time.time() - t0
 
     def finish(self):
-        """Finish process execution. Return a tuple with any unread
-        (stdout, stderr) messages"""
+        """
+        Finish process execution. Return a tuple with any unread
+        (stdout, stderr) messages.
+        """
 
         out = self.receive()
         self._process.kill(9)

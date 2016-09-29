@@ -13,7 +13,8 @@ __all__ = ['run', 'SerializationError']
 
 def run(target, args=(), kwargs=None, *, timeout=None,
         method='best', **kwds):
-    """Run target function in a sandboxed environment and return the results.
+    """
+    Run target function in a sandboxed environment and return the results.
 
     The target function executes on a different python interpreter under a low
     privilege user. Everything is serialized and transmitted to the sandbox
