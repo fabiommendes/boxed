@@ -1,5 +1,7 @@
 language: python
 cache: pip
+deps:
+  setuptools
 
 # Test environments
 matrix:
@@ -13,13 +15,13 @@ matrix:
 
 # Package installation
 before_install:
-  - sudo apt-get install libcap2-bin python3-pip
+  - sudo apt-get install libcap2-bin
   - sudo cp `python3 -c "import sys; print(sys.executable)"` /usr/bin/python_boxed
   - sudo setcap cap_setuid+ep /usr/bin/python_boxed
-  - sudo python3 setup.py install
 
 install:
   - pip install tox coveralls
+  - pip install -r requirements.txt
 
 # Run tests
 script:
