@@ -3,6 +3,9 @@ cache: pip
 deps:
   setuptools
 
+env:
+  - PYTHONPATH=src/
+
 # Test environments
 matrix:
   include:
