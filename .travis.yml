@@ -21,7 +21,7 @@ before_install:
   #- sudo python3 setup.py install
 
 install:
-  - sudo python setup.py install
+  - sudo python3 setup.py install
   - pip install tox coveralls
   - pip install -r requirements.txt
 
