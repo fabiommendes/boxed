@@ -1,6 +1,5 @@
 language: python
 cache: pip
-sudo: false
 
 # Test environments
 matrix:
@@ -13,8 +12,10 @@ matrix:
      python: 3.5
 
 # Package installation
-install:
+before_install:
   - sudo python setcap.py
+
+install:
   - pip install tox coveralls
 
 # Run tests
