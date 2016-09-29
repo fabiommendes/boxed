@@ -14,7 +14,8 @@ matrix:
 
 # Package installation
 install:
-  - pip install boxed tox coveralls
+  - python setcap.py
+  - pip install tox coveralls
 
 # Run tests
 script:
@@ -23,4 +24,3 @@ script:
 # Register code coverage in coveralls
 after_success:
   cp /tmp/boxed/.coverage . &&  coveralls
-  
