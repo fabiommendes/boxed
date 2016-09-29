@@ -6,8 +6,6 @@ deps:
 # Test environments
 matrix:
   include:
-   - env: TOXENV=py33
-     python: 3.3
    - env: TOXENV=py34
      python: 3.4
    - env: TOXENV=py35
@@ -18,11 +16,12 @@ before_install:
   - sudo apt-get install libcap2-bin
   - sudo cp `python3 -c "import sys; print(sys.executable)"` /usr/bin/python_boxed
   - sudo setcap cap_setuid+ep /usr/bin/python_boxed
-  - sudo python3 get-pip.py install setuptools
-  - sudo python3 get-pip.py -r requirements.txt
-  - sudo python3 setup.py install
+  #- sudo python3 get-pip.py install setuptools
+  #- sudo python3 get-pip.py -r requirements.txt
+  #- sudo python3 setup.py install
 
 install:
+  - sudo python setup.py install
   - pip install tox coveralls
   - pip install -r requirements.txt
 
