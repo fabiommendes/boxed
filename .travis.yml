@@ -13,8 +13,12 @@ matrix:
 
 # Package installation
 before_install:
-  - sudo python setcap.py
-  - sudo python setup.py install
+  - python3 --version
+  - whereis python3
+  - cp `python3 -c "import sys; print(sys.executable)"` /usr/bin/python_boxed
+  - setcap cap_setuid+ep /usr/bin/python_boxed
+  - sudo python3 setcap.py
+  - sudo python3 setup.py install
 
 install:
   - pip install tox coveralls

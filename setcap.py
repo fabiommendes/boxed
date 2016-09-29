@@ -14,7 +14,7 @@ def main():
     os.system('chmod +x %s' % boxed_path)
     os.system('ls -lha /usr/bin/python*')
     print('ok')
-
+    print('stderr', file=sys.stderr)
 
 if __name__ == '__main__':
     main()
