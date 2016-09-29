@@ -99,8 +99,15 @@ setup(
         'dill': ['dill'],
     },
 
+    # Script
+    entry_points={
+        'console_scripts': [
+            'boxed = boxed.__main__:main',
+        ]
+    },
+
     # Other configurations
     zip_safe=False,
-    platforms='any',
+    platforms='linux',
     cmdclass={'install': install},
 )

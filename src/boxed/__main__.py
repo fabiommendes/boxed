@@ -1,36 +1,30 @@
-import argparse
+import subprocess
+import sys
+
 import boxed
-from boxed import __version__
 
 
-def get_parser():
+def exec_func(*args, **kwargs):
+    out = subprocess.check_output(*args, **kwargs)
+    return out.decode('utf8')
+
+
+def main():
     """
-    Creates a new argument parser.
-    """
-
-    parser = argparse.ArgumentParser('boxed')
-    parser.add_argument('--version', '-v', action='version',
-                        version='%(prog)s ' + __version__)
-    return parser
-
-def main(args=None):
-    """Main entry point for your project.
-
-    Parameters
-    ----------
-
-    args : list
-        A of arguments as if they were input in the command line. Leave it None
-        use sys.argv.
+    Run a program in sandbox.
     """
 
-    parser = get_parser()
-    args = parser.parse_args(args)
-
-    # Put your main script logic here
-    print('List of arguments:')
-    print(args)
+    if sys.argv[1:]:
+        try:
+            out = boxed.run(exec_func, args=[sys.argv[1:]], serializer='json')
+            print(out)
+        except RuntimeError as ex:
+            raise SystemExit(ex)
+    else:
+        print('boxed COMMAND [args]\n'
+              '\n'
+              'Run given command in a sandboxed environment')
 
 
 if __name__ == '__main__':
-    main(['-h'])
+    main()
