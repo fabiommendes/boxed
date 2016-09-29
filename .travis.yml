@@ -14,7 +14,7 @@ matrix:
 
 # Package installation
 install:
-  - python setcap.py
+  - sudo python setcap.py
   - pip install tox coveralls
 
 # Run tests
