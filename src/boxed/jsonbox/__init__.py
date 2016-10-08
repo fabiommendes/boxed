@@ -37,13 +37,18 @@ def run(target, args=(), kwargs=None, *, timeout=None, user='nobody',
         target=target,
     )
 
-    # The output should be JSON-encodable and would contain the result of the
+    # The output should be JSON-encodable and contain the result of
     # execution
     try:
         result = json.loads(json_data)
     except Exception as ex:
+        ex_name = type(ex).__name__
         raise SerializationError(
-            'could not process subprocess output: %s' % ex
+            '%s: %r\n'
+            'Payload:\n'
+            '%s\n'
+            'Debug:\n'
+            '%s' % (ex_name, ex, indent(json_data, 4), indent(comments, 4))
         )
 
     return return_from_status_data(result)

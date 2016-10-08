@@ -116,6 +116,17 @@ class Pinteract:
         if self.encoding is not None:
             data = data.decode(self.encoding)
         return data.replace('\r\n', '\n')
+
+    def receive_non_empty(self):
+        """
+        Tries to execute the ".receive()" command several times until a
+        non-empty response is given.
+        """
+
+        data = ''
+        while not data:
+            data = self.receive()
+        return data
     
     def send(self, data, end=None):
         """

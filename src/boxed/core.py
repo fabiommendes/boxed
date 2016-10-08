@@ -64,7 +64,7 @@ class CommunicationPipe:
             self._default_receiver = getattr(self, 'recv%s' % value)
             self._default = value
         except AttributeError:
-            raise ValueError('invalid method')
+            raise ValueError('invalid serializer method: %r' % value)
 
     def senderror(self, ex):
         """
@@ -104,7 +104,7 @@ class CommunicationPipe:
 
         st = self.as_str(st)
 
-        if '\n' in st or '\r\f' in st:
+        if '\n' in st or '\r\n' in st:
             raise ValueError('cannot send strings with newline characters')
         _python_print_function(st, file=self.stdout or sys.stdout)
 
@@ -263,7 +263,7 @@ def indent(msg, indent):
     Indent message.
     """
 
-    prefix = ' ' * indent
+    prefix = ' ' * indent if isinstance(indent, int) else indent
     return '\n'.join(prefix + line for line in msg.splitlines())
 
 
@@ -336,11 +336,16 @@ def send_data(data):
     if global_serializer is None:
         raise SystemExit('global serializer was not set')
 
+    if not isinstance(data, dict):
+        raise SerializationError('message is not a dictionary, got %r' % data)
+    if not data:
+        raise SerializationError('empty message dictionary')
+
     try:
         serialized = global_serializer(data)
     except Exception as ex:
         raise SerializationError(ex)
-    real_print(serialized)
+    real_print(serialized or global_serializer({}))
 
 
 def END_POINT(data):
@@ -349,21 +354,21 @@ def END_POINT(data):
     success exit code.
     """
 
+    comment('END_POINT')
     send_data(data)
+    comment('bye!')
     raise SystemExit(0)
 
 
-def comment(*args, symbol='# ', **kwargs):
+def comment(*args, symbol='# '):
     """
     Sends a paragraph prepended by the comment symbol.
     """
 
-    with capture_print() as st:
-        data = '\n'.join(symbol + x for x in st.splitlines())
-    real_print(symbol, *args, **kwargs)
+    data = indent(' '.join(map(str, args)), symbol)
+    real_print(data)
 
 
-# noinspection PyMissingConstructor
 class FileString(collections.UserString):
     """
     A string-like object that is initialized with the contents of a file object
@@ -372,12 +377,16 @@ class FileString(collections.UserString):
 
     def __init__(self, file):
         self.file = file
-        self._data = None
+        self._data = ''
 
     @property
     def data(self):
         if self._data is None:
             self._data = self.file.getvalue()
+        return self._data
+
+    def read(self):
+        self._data = self.file.getvalue()
         return self._data
 
 
@@ -389,11 +398,23 @@ def capture_print():
     """
 
     old_stdout = sys.stdout
+    sys.stdout = io.StringIO()
+    filestring = FileString(sys.stdout)
     try:
-        sys.stdout = io.StringIO()
-        yield FileString(sys.stdout)
+        yield filestring
     finally:
         sys.stdout = old_stdout
+        filestring.read()
+
+
+def funcname(func):
+    """
+    Return a string wit a function name
+    """
+    try:
+        return '%s()' % func.__name__
+    except AttributeError:
+        return repr(func)
 
 
 def validate_target(data, handshake):
@@ -448,7 +469,7 @@ def validate_target(data, handshake):
             'message':
                 'could not find function "%s" in module %s' % (func, mod),
         })
-    comment('target function loaded as %s' % target)
+    comment('target function loaded as %s' % funcname(target))
     return target
 
 
@@ -480,29 +501,43 @@ def execute_target(target, args, kwargs, send_exception=False):
     actual exception in the 'exception' key of this dictionary.
     """
 
-    output = None
+    sys_streams = sys.stdout, sys.stderr
+    stream = io.StringIO()
+    sys.stderr = sys.stdout = stream
 
-    with capture_print() as stdout:
-        try:
+    try:
+        with capture_print() as data:
             output = target(*args, **kwargs)
-            comment('target function %s successfully executed' % target)
-        except Exception as ex:
-            tb_data = io.StringIO()
-            traceback.print_tb(ex.__traceback__, limit=-3, file=tb_data)
-            exc_data = {
-                'status': 'exception',
-                'type': ex.__class__.__name__,
-                'message': str(ex),
-                'traceback': tb_data.getvalue(),
-                'target': '%s.%s' % (target.__module__, target.__name__),
-            }
-            if send_exception:
-                exc_data['exception'] = ex
-            END_POINT(exc_data)
+        stdout = data.read()
+    except Exception as ex:
+        comment('target function %s executed with %s: %s' %
+                (funcname(target), ex.__class__.__name__, ex))
+        tb_data = io.StringIO()
+        traceback.print_tb(ex.__traceback__, limit=-3, file=tb_data)
+        exc_data = {
+            'status': 'exception',
+            'type': ex.__class__.__name__,
+            'message': str(ex),
+            'traceback': tb_data.getvalue(),
+            'target': '%s.%s' % (target.__module__, target.__name__),
+        }
+        if send_exception:
+            exc_data['exception'] = ex
+        return END_POINT(exc_data)
+    else:
+        stdout = stream.getvalue()
+        outmsg = 'captured %s chars' % len(stdout) if stdout else 'no output'
+        comment('target function %s returned %s object (%s)' % (
+            funcname(target), type(output).__name__, outmsg
+        ))
+
+    if stdout:
+        comment('captured output:')
+        comment(indent(stdout, 4))
 
     return {
         'status': 'success',
-        'stdout': str(stdout),
+        'stdout': stdout,
         'output': output,
     }
 
@@ -589,7 +624,7 @@ def execute_subprocess(command, inputs, *, timeout, target, args, kwargs):
             )
         )
 
-    # We remove all comments and send a separate comments and data sections
+    # We remove all comments and send separate comments and data sections
     data = '\n'.join(
         line for line in out.splitlines() if not line.startswith('#')
     ).strip()

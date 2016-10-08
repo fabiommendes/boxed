@@ -11,7 +11,8 @@
 # since the execution takes place at a lower privilege. In some scenarios
 # (e.g.: an online judge, this open some opportunities to forgery.
 #
-from boxed.core import set_protocol, END_POINT, SerializationError
+from boxed.core import set_protocol, END_POINT, SerializationError, comment, \
+    send_data
 from boxed.core import load_data, validate_target, lower_privileges, execute_target
 
 
@@ -27,7 +28,6 @@ lower_privileges(data.get('user', 'nobody'))
 
 # Execute target function
 out_data = execute_target(target, data['args'], data['kwargs'])
-
 
 # Convert result to JSON and return
 try:

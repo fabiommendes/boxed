@@ -1,6 +1,6 @@
 import os
 from contextlib import contextmanager
-import pytest
+
 from boxed.pinteract import Pinteract
 
 
@@ -24,11 +24,17 @@ int main() {
         os.remove(fname)
 
 
+#
+# Simple CLI programs
+#
 def test_simple_interaction():
     p = Pinteract(['echo', 'foo'])
     assert p.receive() == 'foo\n'
 
 
+#
+# Python programs
+#
 def test_io_interaction():
     p = Pinteract(['python3', '-c', 'print(input("foo: "))'])
     assert p.receive() == 'foo: '
@@ -44,7 +50,8 @@ def test_send_two_inputs():
 
 
 def test_intercalate_inputs_and_outputs():
-    p = Pinteract(['python3', '-c', 'x = input("x"); y = input("y"); print(x + y)'])
+    p = Pinteract(
+        ['python3', '-c', 'x = input("x"); y = input("y"); print(x + y)'])
     assert p.receive() == 'x'
     p.send('foo')
     assert p.receive() == 'y'
@@ -52,6 +59,21 @@ def test_intercalate_inputs_and_outputs():
     assert p.receive() == 'foobar\n'
 
 
+def test_can_sleep_between_two_inputs():
+    p = Pinteract(['python3', '-c', 'import time; '
+                                    'input("foo: "); '
+                                    'time.sleep(0.07); '
+                                    'print(input("bar: "))'])
+    assert p.receive() == 'foo: '
+    p.send('bar')
+    assert p.receive_non_empty() == 'bar: '
+    p.send('bar')
+    assert p.receive() == 'bar\n'
+
+
+#
+# C programs
+#
 def test_read_c_program():
     with c_main('puts("hello world");') as p:
         assert p.receive() == 'hello world\n'

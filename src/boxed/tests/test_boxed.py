@@ -48,10 +48,11 @@ def test_output_pass_through_sandbox():
     out = io.StringIO()
     stdout, sys.stdout = sys.stdout, out
     try:
-        run(print, args=('hello world',))
+        result = run(print, args=('hello world',))
     finally:
         sys.stdout = stdout
 
+    assert result is None
     assert out.getvalue() == 'hello world\n'
 
 
