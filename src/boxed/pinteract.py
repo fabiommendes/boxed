@@ -9,16 +9,18 @@ class Pinteract:
     A class for conveniently interacting with a child process.
     """
 
-    def __init__(self, command, timeout=None, encoding='utf8'):
+    def __init__(self, command, timeout=None, encoding='utf8', cwd=None, env=None):
         if timeout == inf:
             timeout = None
         self.__burnt = False
         self._remaining_time = timeout or float('inf')
-        self._process = pexpect.spawn(command[0], command[1:])
+        self._process = pexpect.spawn(command[0], command[1:], cwd=cwd, env=env)
         self._process.setecho(False)
         self._psdata = psutil.Process(self._process.pid)
         self.encoding = encoding
         self.timeout = timeout
+        self.cwd = cwd
+        self.env = env
         self.pid = self._process.pid
         
     def burn(self, duration):
