@@ -31,7 +31,7 @@ def run(target, args=(), kwargs=None, *, timeout=None, user='nobody',
 
     # Execute a subprocess by sending the input JSON structure. We should
     # receive another JSON structure and interpret it
-    logger.info('called %r() on sandbox' % data['target'])
+    logger.info('called %s() on sandbox' % data['target'])
     pickle_data, comments = execute_subprocess(
         ['python_boxed', '-m', 'boxed.picklebox'],
         inputs='%s\n%s' % (serializer, serialized),
