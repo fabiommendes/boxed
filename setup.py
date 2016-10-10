@@ -84,6 +84,8 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages('src'),
     install_requires=[
+        'pexpect>=4.2',
+        'psutil>=4.3',
     ],
     extras_require={
         'dev': [
@@ -91,8 +93,6 @@ setup(
             'invoke>=0.13',
             'pytest',
             'pytest-cov',
-            'psutil',
-            'pexpect',
             'manuel',
         ],
         'cloudpickle': ['cloudpickle'],
