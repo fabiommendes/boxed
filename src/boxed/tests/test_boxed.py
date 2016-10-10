@@ -3,7 +3,7 @@ import io
 import sys
 import math
 import pytest
-from boxed.simplebox import run
+from boxed.picklebox import run
 from boxed import SerializationError
 
 
@@ -48,7 +48,7 @@ def test_output_pass_through_sandbox():
     out = io.StringIO()
     stdout, sys.stdout = sys.stdout, out
     try:
-        result = run(print, args=('hello world',))
+        result = run(print, args=('hello world',), print_messages=False)
     finally:
         sys.stdout = stdout
 

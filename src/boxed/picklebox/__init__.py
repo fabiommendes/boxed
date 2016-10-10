@@ -1,9 +1,12 @@
+import logging
+
 from boxed.core import return_from_status_data, execute_subprocess, indent
 from boxed.core import get_serializer, get_deserializer, SerializationError
+logger = logging.getLogger('boxed.picklebox')
 
 
 def run(target, args=(), kwargs=None, *, timeout=None, user='nobody',
-        imports=(), serializer='pickle'):
+        imports=(), serializer='pickle', print_messages=False):
     """Simple sandboxing based on the existence of the python executable
     `python_boxed` with setuid capabilities.
 
@@ -28,7 +31,8 @@ def run(target, args=(), kwargs=None, *, timeout=None, user='nobody',
 
     # Execute a subprocess by sending the input JSON structure. We should
     # receive another JSON structure and interpret it
-    json_data, comments = execute_subprocess(
+    logger.info('called %r() on sandbox' % data['target'])
+    pickle_data, comments = execute_subprocess(
         ['python_boxed', '-m', 'boxed.picklebox'],
         inputs='%s\n%s' % (serializer, serialized),
         timeout=timeout,
@@ -36,9 +40,11 @@ def run(target, args=(), kwargs=None, *, timeout=None, user='nobody',
         kwargs=kwargs,
         target=target,
     )
+    if print_messages:
+        print(comments)
 
     # The output should be a pickle stream and would contain the result of
     # execution
+    logger.debug('child sub-process finished. Processing response.')
     deserializer = get_deserializer(serializer)
-    result = deserializer(json_data)
-    return return_from_status_data(result)
+    return return_from_status_data(pickle_data, comments, deserializer)

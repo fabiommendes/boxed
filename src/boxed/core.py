@@ -8,6 +8,9 @@ import contextlib
 import collections
 import traceback
 import base64
+import logging
+
+logger = logging.getLogger('boxed')
 
 
 def _sendpickle_factory(pickler):
@@ -501,16 +504,12 @@ def execute_target(target, args, kwargs, send_exception=False):
     actual exception in the 'exception' key of this dictionary.
     """
 
-    sys_streams = sys.stdout, sys.stderr
-    stream = io.StringIO()
-    sys.stderr = sys.stdout = stream
-
     try:
         with capture_print() as data:
             output = target(*args, **kwargs)
         stdout = data.read()
     except Exception as ex:
-        comment('target function %s executed with %s: %s' %
+        comment('target function %s error %s: %s' %
                 (funcname(target), ex.__class__.__name__, ex))
         tb_data = io.StringIO()
         traceback.print_tb(ex.__traceback__, limit=-3, file=tb_data)
@@ -525,7 +524,6 @@ def execute_target(target, args, kwargs, send_exception=False):
             exc_data['exception'] = ex
         return END_POINT(exc_data)
     else:
-        stdout = stream.getvalue()
         outmsg = 'captured %s chars' % len(stdout) if stdout else 'no output'
         comment('target function %s returned %s object (%s)' % (
             funcname(target), type(output).__name__, outmsg
@@ -542,11 +540,23 @@ def execute_target(target, args, kwargs, send_exception=False):
     }
 
 
-def return_from_status_data(data):
+def return_from_status_data(serialized, comments, deserializer):
     """
     Interpret status data sent from the __main__.py script and return the
     correct value or raise the corresponding exception.
     """
+
+    try:
+        data = deserializer(serialized)
+    except Exception as ex:
+        ex_name = type(ex).__name__
+        raise SerializationError(
+            '%s: %r\n'
+            'Payload:\n'
+            '%s\n'
+            'Debug:\n'
+            '%s' % (ex_name, ex, indent(serialized, 4), indent(comments, 4))
+        )
 
     if 'status' not in data:
         raise RuntimeError('subprocess returned an invalid message')

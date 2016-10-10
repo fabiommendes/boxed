@@ -51,7 +51,7 @@ def test_output_pass_through_sandbox(run):
     out = io.StringIO()
     stdout, sys.stdout = sys.stdout, out
     try:
-        run(print, args=('hello world',))
+        run(print, args=('hello world',), print_messages=False)
     finally:
         sys.stdout = stdout
 

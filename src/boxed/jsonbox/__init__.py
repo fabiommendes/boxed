@@ -1,9 +1,12 @@
 import json
+import logging
+
 from boxed.core import return_from_status_data, execute_subprocess, indent, SerializationError
+logger = logging.getLogger('boxed.jsonbox')
 
 
 def run(target, args=(), kwargs=None, *, timeout=None, user='nobody',
-        imports=()):
+        imports=(), print_messages=False):
     """Simple sandboxing based on the existence of the python executable
     `python_boxed` with setuid capabilities.
 
@@ -28,6 +31,7 @@ def run(target, args=(), kwargs=None, *, timeout=None, user='nobody',
 
     # Execute a subprocess by sending the input JSON structure. We should
     # receive another JSON structure and interpret it
+    logger.info('called %r() on sandbox' % data['target'])
     json_data, comments = execute_subprocess(
         ['python_boxed', '-m', 'boxed.jsonbox'],
         inputs=serialized,
@@ -36,19 +40,10 @@ def run(target, args=(), kwargs=None, *, timeout=None, user='nobody',
         kwargs=kwargs,
         target=target,
     )
+    if print_messages:
+        print(comments)
 
     # The output should be JSON-encodable and contain the result of
     # execution
-    try:
-        result = json.loads(json_data)
-    except Exception as ex:
-        ex_name = type(ex).__name__
-        raise SerializationError(
-            '%s: %r\n'
-            'Payload:\n'
-            '%s\n'
-            'Debug:\n'
-            '%s' % (ex_name, ex, indent(json_data, 4), indent(comments, 4))
-        )
-
-    return return_from_status_data(result)
+    logger.debug('child sub-process finished. Processing response.')
+    return return_from_status_data(json_data, comments, json.loads)
