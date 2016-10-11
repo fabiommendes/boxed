@@ -33,7 +33,7 @@ def run(target, args=(), kwargs=None, *, timeout=None, user='nobody',
     # receive another JSON structure and interpret it
     logger.info('called %s() on sandbox' % data['target'])
     json_data, comments = execute_subprocess(
-        ['python_boxed', '-m', 'boxed.jsonbox'],
+        ['python_boxed', '-S', '-s', '-m', 'boxed.jsonbox'],
         inputs=serialized,
         timeout=timeout,
         args=args,

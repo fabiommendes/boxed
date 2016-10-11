@@ -281,7 +281,7 @@ def real_print(*args, **kwargs):
     """
 
     kwargs.setdefault('file', real_stdout)
-    print(*args, **kwargs)
+    _python_print_function(*args, **kwargs)
 
 
 def set_serializer(func):
@@ -401,17 +401,17 @@ class FileString(collections.UserString):
 @contextlib.contextmanager
 def capture_print():
     """
-    Context manager that captures data printed to stdout into a
+    Context manager that captures data printed to stdout/stderr into a
     string-like object.
     """
 
-    old_stdout = sys.stdout
-    sys.stdout = io.StringIO()
+    old_streams = sys.stdout, sys.stderr
+    sys.stdout = sys.stderr = io.StringIO()
     filestring = FileString(sys.stdout)
     try:
         yield filestring
     finally:
-        sys.stdout = old_stdout
+        sys.stdout, sys.stderr = old_streams
         filestring.read()
 
 
@@ -512,7 +512,10 @@ def execute_target(target, args, kwargs, send_exception=False):
 
     try:
         with capture_print() as data:
-            output = target(*args, **kwargs)
+            try:
+                output = target(*args, **kwargs)
+            except SystemExit:
+                raise RuntimeError('attempted system exit')
         stdout = data.read()
     except Exception as ex:
         exname = get_exception_name(ex)
@@ -570,7 +573,7 @@ def return_from_status_data(serialized, comments, deserializer):
     status = data['status']
 
     if status == 'success':
-        print(data.get('stdout', ''), end='')
+        _python_print_function(data.get('stdout', ''), end='')
         return data['output']
 
     elif status == 'invalid-handshake':
@@ -589,9 +592,9 @@ def return_from_status_data(serialized, comments, deserializer):
         raise RuntimeError(data['message'])
 
     elif status == 'exception':
-        print('Error while running sandboxed function %s(...)' %
+        _python_print_function('Error while running sandboxed function %s(...)' %
               data['target'])
-        print(data['traceback'], end='')
+        _python_print_function(data['traceback'], end='')
 
         try:
             exc = data['type']
@@ -633,7 +636,7 @@ def execute_subprocess(command, inputs, *, timeout, target, args, kwargs):
                  env={'PYTHONPATH': pythonpath()})
     out, err = proc.communicate(input=inputs, timeout=timeout)
 
-    if err or proc.poll() != 0:
+    if err:
         raise RuntimeError(
             'error running function %s with:\n'
             '    args=%r\n'
