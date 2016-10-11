@@ -1,7 +1,9 @@
 import logging
 
 from boxed.core import return_from_status_data, execute_subprocess, indent
-from boxed.core import get_serializer, get_deserializer, SerializationError
+from boxed.core import get_serializer, get_deserializer
+from boxed.errors import SerializationError
+
 logger = logging.getLogger('boxed.picklebox')
 
 

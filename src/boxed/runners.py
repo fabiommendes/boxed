@@ -2,11 +2,11 @@
 Common interface to different sandboxing environments.
 """
 
-from boxed.core import SerializationError
+from boxed.errors import SerializationError
 from boxed.jsonbox import run as run_jsonbox
 from boxed.picklebox import run as run_picklebox
 
-__all__ = ['run', 'SerializationError']
+__all__ = ['run']
 
 
 def run(target, args=(), kwargs=None, *, timeout=None,

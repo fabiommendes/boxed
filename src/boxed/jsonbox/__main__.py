@@ -11,8 +11,9 @@
 # since the execution takes place at a lower privilege. In some scenarios
 # (e.g.: an online judge, this open some opportunities to forgery.
 #
-from boxed.core import set_protocol, END_POINT, SerializationError, comment, \
+from boxed.core import set_protocol, END_POINT, comment, \
     send_data
+from boxed.errors import SerializationError
 from boxed.core import load_data, validate_target, lower_privileges, execute_target
 
 

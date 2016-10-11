@@ -94,6 +94,8 @@ class Pinteract:
         data = []
         last = 'non empty'
         while last:
+            if self._remaining_time < 0:
+                raise TimeoutError
             try:
                 last = self._process.read_nonblocking(1, timeout=0.05)
             except pexpect.EOF:
@@ -113,7 +115,7 @@ class Pinteract:
                                        self.status())
             data.append(last)
 
-        self._remaining_time -= time.time() - t0        
+        self._remaining_time -= time.time() - t0
         data = b''.join(data)
         if self.encoding is not None:
             data = data.decode(self.encoding)

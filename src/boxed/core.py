@@ -11,7 +11,7 @@ import pwd
 import sys
 import traceback
 
-from boxed.errors import CalledProcessError
+from boxed.errors import CalledProcessError, SerializationError
 
 logger = logging.getLogger('boxed')
 
@@ -46,6 +46,11 @@ def _recvpickle_factory(pickler):
 # order to capture inputs and outputs from a program.
 _python_input_function = input
 _python_print_function = print
+
+
+# Let us be paranoid and defend from all changes in builtins
+globals().update(vars(builtins))
+__import__ = builtins.__import__
 
 
 class CommunicationPipe:
@@ -239,15 +244,6 @@ class CommunicationPipe:
         finally:
             del self.sendraw
         return buffer[0]
-
-
-#
-# Specialized error classes
-#
-class SerializationError(ValueError):
-    """
-    Triggered when pickle or other serializer fails.
-    """
 
 
 #
@@ -518,9 +514,13 @@ def execute_target(target, args, kwargs, send_exception=False):
                 raise RuntimeError('attempted system exit')
         stdout = data.read()
     except Exception as ex:
+        stdout = data.read()
         exname = get_exception_name(ex)
         exrepr = get_exception_str(ex)
         target_name = get_target_name(target)
+        if stdout:
+            comment('Captured output:')
+            comment(indent(stdout, 2))
         print_exception_traceback(target_name, ex)
         exc_data = {
             'status': 'exception',
@@ -784,9 +784,7 @@ def print_exception_traceback(target, ex):
         comment('execution ended with %s: %s' % (name, msg))
 
 
-#
-# Errors
-#
+@noexcepfunc(CalledProcessError)
 def called_process_runtime_error(exc, args):
     exc_class = exceptions.get(exc, CalledProcessError)
 
@@ -795,5 +793,7 @@ def called_process_runtime_error(exc, args):
 
     try:
         return exc_class(*args)
-    except:
-        return CalledProcessError('%s%r' % (exc, args))
+    except Exception:
+        if issubclass(exc_class, Exception):
+            return exc_class
+    return CalledProcessError('%s%r' % (exc, args))

@@ -1,4 +1,5 @@
-from boxed.core import set_protocol, END_POINT, SerializationError
+from boxed.core import set_protocol, END_POINT
+from boxed.errors import SerializationError
 from boxed.core import load_data, validate_target, lower_privileges, execute_target
 
 

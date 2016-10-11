@@ -1,7 +1,9 @@
 import json
 import logging
 
-from boxed.core import return_from_status_data, execute_subprocess, indent, SerializationError
+from boxed.core import return_from_status_data, execute_subprocess, indent
+from boxed.errors import SerializationError
+
 logger = logging.getLogger('boxed.jsonbox')
 
 

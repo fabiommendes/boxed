@@ -4,7 +4,7 @@ import sys
 import math
 import pytest
 from boxed.picklebox import run
-from boxed import SerializationError
+from boxed.errors import SerializationError
 
 
 def write_to_file(path, data):
