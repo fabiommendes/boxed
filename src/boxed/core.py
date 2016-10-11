@@ -1,14 +1,17 @@
+import base64
+import builtins
+import collections
+import contextlib
+import functools
+import importlib
 import io
+import logging
 import os
 import pwd
 import sys
-import builtins
-import importlib
-import contextlib
-import collections
 import traceback
-import base64
-import logging
+
+from boxed.errors import CalledProcessError
 
 logger = logging.getLogger('boxed')
 
@@ -18,6 +21,7 @@ def _sendpickle_factory(pickler):
         lib = importlib.import_module(pickler)
         data = lib.dumps(data)
         self.sendsafe(data)
+
     sendpickle.__name__ = 'send' + pickler
 
     return sendpickle
@@ -31,9 +35,11 @@ def _recvpickle_factory(pickler):
             lib = self.picklers[pickler] = importlib.import_module(pickler)
         data = self.recvsafe()
         return lib.loads(data)
+
     recvpickle.__name__ = 'recv' + pickler
 
     return recvpickle
+
 
 # We store these here in case someone messes with the system's builtins
 # This happens with the ejudge engine since it messes with these functions in
@@ -251,13 +257,12 @@ real_stdout = sys.stdout
 global_serializer = None
 global_deserializer = None
 
-
 # Maps exception names to their corresponding classes
 exceptions = {
     k: v
     for k, v in vars(builtins).items()
     if isinstance(v, type) and issubclass(v, Exception)
-}
+    }
 exceptions['SerializationError'] = SerializationError
 
 
@@ -509,24 +514,25 @@ def execute_target(target, args, kwargs, send_exception=False):
             output = target(*args, **kwargs)
         stdout = data.read()
     except Exception as ex:
-        comment('target function %s error %s: %s' %
-                (funcname(target), ex.__class__.__name__, ex))
-        tb_data = io.StringIO()
-        traceback.print_tb(ex.__traceback__, limit=-3, file=tb_data)
+        exname = get_exception_name(ex)
+        exrepr = get_exception_str(ex)
+        target_name = get_target_name(target)
+        print_exception_traceback(target_name, ex)
         exc_data = {
             'status': 'exception',
-            'type': ex.__class__.__name__,
-            'message': str(ex),
-            'traceback': tb_data.getvalue(),
-            'target': '%s.%s' % (target.__module__, target.__name__),
+            'type': get_exception_name(ex),
+            'args': get_exception_args(ex),
+            'traceback': get_exception_traceback(ex),
+            'target': target_name,
         }
         if send_exception:
             exc_data['exception'] = ex
         return END_POINT(exc_data)
     else:
+        out_type_name = output.__class__.__name__
         outmsg = 'captured %s chars' % len(stdout) if stdout else 'no output'
         comment('target function %s returned %s object (%s)' % (
-            funcname(target), type(output).__name__, outmsg
+            funcname(target), out_type_name, outmsg
         ))
 
     if stdout:
@@ -587,9 +593,9 @@ def return_from_status_data(serialized, comments, deserializer):
         print(data['traceback'], end='')
 
         try:
-            exc = exceptions[data['type']]
-            msg = data['message']
-            raise exc(msg)
+            exc = data['type']
+            args = data['args']
+            raise called_process_runtime_error(exc, args)
         except KeyError:
             data = '%s(%r)' % (data['type'], data['message'])
             raise RuntimeError('failed with unknown exception: %s' % data)
@@ -610,7 +616,7 @@ def return_from_status_data(serialized, comments, deserializer):
 
 def execute_subprocess(command, inputs, *, timeout, target, args, kwargs):
     """
-    Assure that subprocess did not raised any errors.
+    Assure that subprocess did not raise any errors.
     """
 
     from subprocess import Popen, PIPE
@@ -620,7 +626,7 @@ def execute_subprocess(command, inputs, *, timeout, target, args, kwargs):
                  universal_newlines=True)
     out, err = proc.communicate(input=inputs, timeout=timeout)
 
-    if err:
+    if err or proc.poll() != 0:
         raise RuntimeError(
             'error running function %s with:\n'
             '    args=%r\n'
@@ -634,13 +640,17 @@ def execute_subprocess(command, inputs, *, timeout, target, args, kwargs):
             )
         )
 
+    # Make sure out is always a string. We ignore decoding errors praying for
+    # the best
+    if isinstance(out, bytes):
+        out = out.decode('utf8', 'ignore')
+
     # We remove all comments and send separate comments and data sections
-    data = '\n'.join(
-        line for line in out.splitlines() if not line.startswith('#')
-    ).strip()
-    comments = '\n'.join(
-        line for line in out.splitlines() if line.startswith('#')
-    ).strip()
+    lines = out.splitlines()
+    data = '\n'.join(line for line in lines if not line.startswith('#'))
+    data = data.strip()
+    comments = '\n'.join(line for line in lines if line.startswith('#'))
+    comments = comments.strip()
 
     # A data section must always be present
     if not data:
@@ -698,3 +708,82 @@ def get_deserializer(name):
             raise SerializationError(ex)
 
     return deserializer
+
+
+def noexcepfunc(value):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapped(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except:
+                return value
+
+        return wrapped
+
+    return decorator
+
+
+#
+# Functions that can never raise exceptions, even in weird circumstances.
+#
+@noexcepfunc('<invalid traceback>')
+def get_exception_traceback(ex):
+    tb_data = io.StringIO()
+    traceback.print_tb(ex.__traceback__, limit=-3, file=tb_data)
+    return tb_data.getvalue()
+
+
+@noexcepfunc('???')
+def get_exception_args(ex):
+    try:
+        return ex.args
+    except:
+        return str(ex)
+
+
+@noexcepfunc('<UnknownError>')
+def get_exception_name(ex):
+    return type(ex).__name__
+
+
+@noexcepfunc('')
+def get_exception_str(ex):
+    return str(ex)
+
+
+@noexcepfunc('<function>')
+def get_target_name(func):
+    module = func.__module__
+    name = func.__name__
+    return '%s.%s' % (module, name)
+
+
+@noexcepfunc(None)
+def print_exception_traceback(target, ex):
+    msg = get_exception_str(ex)
+    name = get_exception_name(ex)
+    try:
+        out = io.StringIO()
+        traceback.print_tb(ex.__traceback__, file=out)
+        comment('Error caught during execution of %s(...)' % target)
+        comment('Traceback (most recent call last)')
+        comment(out.getvalue())
+        comment('%s: %s' % (name, msg))
+    except:
+        comment('execution ended with %s: %s' % (name, msg))
+
+
+#
+# Errors
+#
+def called_process_runtime_error(exc, args):
+    exc_class = exceptions.get(exc, CalledProcessError)
+
+    if isinstance(args, str):
+        args = (args,)
+
+    try:
+        return exc_class(*args)
+    except:
+        return CalledProcessError('%s%r' % (exc, args))
