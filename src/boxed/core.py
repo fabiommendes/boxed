@@ -444,6 +444,7 @@ def validate_target(data, handshake):
 
     # Import all requested modules
     for mod in data.get('imports', ()):
+        importlib.import_module('boxed')
         try:
             importlib.import_module(mod)
         except ImportError:
@@ -614,6 +615,11 @@ def return_from_status_data(serialized, comments, deserializer):
         raise RuntimeError('invalid status: %s' % status)
 
 
+def pythonpath():
+    boxed_path = os.path.dirname(os.path.dirname(__file__))
+    return boxed_path + ':' + ':'.join(sys.path)
+
+
 def execute_subprocess(command, inputs, *, timeout, target, args, kwargs):
     """
     Assure that subprocess did not raise any errors.
@@ -623,7 +629,8 @@ def execute_subprocess(command, inputs, *, timeout, target, args, kwargs):
 
     proc = Popen(command,
                  stdin=PIPE, stdout=PIPE, stderr=PIPE,
-                 universal_newlines=True)
+                 universal_newlines=True,
+                 env={'PYTHONPATH': pythonpath()})
     out, err = proc.communicate(input=inputs, timeout=timeout)
 
     if err or proc.poll() != 0:
